@@ -1,0 +1,382 @@
+{
+  "metadata": {
+    "title": "InnerLog AI時代キャリアタイプ診断（完全版）",
+    "version": "3.0.0",
+    "description": "6タイプ完全バランス判定を実現したStanford HAI研究ベース診断システム",
+    "totalQuestions": 20,
+    "responseScale": "5_point_likert",
+    "scoringMethod": "enhanced_weighted_additive",
+    "balanceOptimized": true,
+    "reliabilityEnhanced": true,
+    "author": "みどり - AI時代パーソナル成長OS"
+  },
+  "responseLabels": {
+    "1": "全く当てはまらない",
+    "2": "あまり当てはまらない", 
+    "3": "どちらともいえない",
+    "4": "やや当てはまる",
+    "5": "非常に当てはまる"
+  },
+  "characterTypes": [
+    {
+      "id": "future_visionary",
+      "name": "フューチャー・ビジョナリー",
+      "catchphrase": "未来を描く創造者",
+      "description": "最新技術を創造的に活用し、新しい価値を生み出すイノベーター。AIを「創造性を拡張する魔法の杖」と捉え、未来のビジョンを具現化する革新者。",
+      "aiEraStrength": "AIと人間の創造性を融合した革新的ソリューション創出",
+      "detailedTraits": ["創造性", "未来志向", "柔軟性", "実験精神"],
+      "careerPaths": ["起業家", "プロダクトデザイナー", "イノベーションマネージャー", "クリエイティブディレクター"],
+      "color": "#FF6B9D",
+      "icon": "✨"
+    },
+    {
+      "id": "void_analyst",
+      "name": "ヴォイド・アナリスト",
+      "catchphrase": "虚空から真実を掴む探偵",
+      "description": "複雑な事象から論理とデータで真実を見つけ出す分析の専門家。AIを「最強の分析アシスタント」として活用し、精密な洞察を提供する探求者。",
+      "aiEraStrength": "AI分析ツールを駆使した高度なデータ解釈・予測",
+      "detailedTraits": ["論理性", "分析力", "客観性", "精密性"],
+      "careerPaths": ["データサイエンティスト", "戦略コンサルタント", "リサーチャー", "ビジネスアナリスト"],
+      "color": "#4ECDC4",
+      "icon": "🔍"
+    },
+    {
+      "id": "harmony_weaver",
+      "name": "ハーモニー・ウィーバー",
+      "catchphrase": "心と心を紡ぐ調整者",
+      "description": "AI時代でも重要な「人間らしさ」を体現する共感と協調の達人。人々の繋がりを助ける温かいツールとしてAIを活用し、チーム力を最大化する。",
+      "aiEraStrength": "AI時代でも不可欠な人間関係構築・チーム統合力",
+      "detailedTraits": ["共感力", "協調性", "調整力", "包容力"],
+      "careerPaths": ["人事マネージャー", "プロジェクトマネージャー", "組織開発コンサルタント", "カスタマーサクセス"],
+      "color": "#45B7D1",
+      "icon": "🤝"
+    },
+    {
+      "id": "matrix_builder",
+      "name": "マトリクス・ビルダー",
+      "catchphrase": "現実を支える建築家",
+      "description": "抽象的なアイデアを具体的なシステムに落とし込む実践的構築者。AIを「究極の自動化ツールキット」として現実世界の問題を着実に解決する。",
+      "aiEraStrength": "AIを活用した業務自動化・プロセス最適化",
+      "detailedTraits": ["実践力", "構築力", "効率性", "安定性"],
+      "careerPaths": ["システムエンジニア", "オペレーションマネージャー", "プロセス改善コンサルタント", "プロジェクトリーダー"],
+      "color": "#96CEB4",
+      "icon": "🔧"
+    },
+    {
+      "id": "akashic_traveler",
+      "name": "アカシック・トラベラー",
+      "catchphrase": "宇宙の記憶を旅する探求者",
+      "description": "尽きない知的好奇心で広大な知識の海を旅する探求者。AIを「無限の知識を与える賢者」として未知の領域への冒険を続ける学習者。",
+      "aiEraStrength": "AI時代の膨大な情報を効率的に習得・活用",
+      "detailedTraits": ["好奇心", "探求心", "学習力", "適応力"],
+      "careerPaths": ["研究者", "教育者", "ライター", "ナレッジワーカー"],
+      "color": "#FFEAA7",
+      "icon": "🌟"
+    },
+    {
+      "id": "grand_strategist",
+      "name": "グランド・ストラテジスト",
+      "catchphrase": "成功を導く戦略家",
+      "description": "盤面全体を俯瞰し勝利から逆算して最適手を見つける天性のストラテジスト。AIを「最強の戦略シミュレーションツール」として活用する指揮官。",
+      "aiEraStrength": "AI活用による戦略立案・意思決定の高度化",
+      "detailedTraits": ["戦略性", "リーダーシップ", "俯瞰力", "決断力"],
+      "careerPaths": ["経営者", "戦略プランナー", "投資家", "事業開発マネージャー"],
+      "color": "#DDA0DD",
+      "icon": "👑"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "新しい技術やアイデアに興味を持ち、それらを創造的に活用したいと思う",
+      "category": "innovation",
+      "weight": 1.2,
+      "characterTypeMapping": {
+        "future_visionary": 2,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 1,
+        "grand_strategist": 0
+      }
+    },
+    {
+      "id": "q2",
+      "text": "複雑な問題を論理的に分析し、データに基づいて解決策を見つけることが得意だ",
+      "category": "analysis",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 2,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 1,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q3",
+      "text": "チームの調和を保ち、メンバー間の関係性を良好に保つことが重要だと思う",
+      "category": "harmony",
+      "weight": 1.0,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 0,
+        "harmony_weaver": 2,
+        "matrix_builder": 1,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q4",
+      "text": "抽象的なアイデアを具体的なシステムやプロセスに落とし込むことが好きだ",
+      "category": "implementation",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 2,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q5",
+      "text": "新しい知識や情報を積極的に学び、未知の領域に挑戦することに興奮を感じる",
+      "category": "learning",
+      "weight": 1.2,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "akashic_traveler": 2,
+        "matrix_builder": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q6",
+      "text": "長期的な戦略を立て、目標達成に向けて計画的に行動することが得意だ",
+      "category": "strategy",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 0,
+        "grand_strategist": 2
+      }
+    },
+    {
+      "id": "q7",
+      "text": "既存の枠組みにとらわれず、革新的な解決策を生み出すことに情熱を感じる",
+      "category": "creativity",
+      "weight": 1.3,
+      "characterTypeMapping": {
+        "future_visionary": 2,
+        "void_analyst": 0,
+        "harmony_weaver": 0,
+        "matrix_builder": 0,
+        "akashic_traveler": 1,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q8",
+      "text": "客観的な事実とデータを重視し、感情的な判断を避ける傾向がある",
+      "category": "objectivity",
+      "weight": 1.0,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 2,
+        "harmony_weaver": -1,
+        "matrix_builder": 1,
+        "akashic_traveler": 1,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q9",
+      "text": "他者の感情や立場を理解し、共感を示すことが自然にできる",
+      "category": "empathy",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": -1,
+        "harmony_weaver": 2,
+        "matrix_builder": 0,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q10",
+      "text": "効率的で実用的な解決策を好み、実現可能性を重視する",
+      "category": "practicality",
+      "weight": 1.0,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 2,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q11",
+      "text": "幅広い分野の知識を統合し、新しい視点や洞察を生み出すことが好きだ",
+      "category": "integration",
+      "weight": 1.2,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 0,
+        "akashic_traveler": 2,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q12",
+      "text": "リーダーシップを発揮し、チームや組織を導くことにやりがいを感じる",
+      "category": "leadership",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 0,
+        "harmony_weaver": 1,
+        "matrix_builder": 1,
+        "akashic_traveler": 0,
+        "grand_strategist": 2
+      }
+    },
+    {
+      "id": "q13",
+      "text": "未来の可能性を描き、それを実現するためのビジョンを提示することができる",
+      "category": "vision",
+      "weight": 1.3,
+      "characterTypeMapping": {
+        "future_visionary": 2,
+        "void_analyst": 0,
+        "harmony_weaver": 0,
+        "matrix_builder": 0,
+        "akashic_traveler": 1,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q14",
+      "text": "精密で正確な作業を好み、細部まで注意を払うことが得意だ",
+      "category": "precision",
+      "weight": 1.0,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 2,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 0,
+        "grand_strategist": 0
+      }
+    },
+    {
+      "id": "q15",
+      "text": "対立や緊張を和らげ、協力的な環境を作り出すことが上手だ",
+      "category": "mediation",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 0,
+        "void_analyst": 0,
+        "harmony_weaver": 2,
+        "matrix_builder": 0,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q16",
+      "text": "複雑なシステムを設計し、それを段階的に構築していくことが好きだ",
+      "category": "system_design",
+      "weight": 1.2,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 2,
+        "akashic_traveler": 0,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q17",
+      "text": "新しい概念や理論を学び、それを実践に応用することに喜びを感じる",
+      "category": "application",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 2,
+        "grand_strategist": 0
+      }
+    },
+    {
+      "id": "q18",
+      "text": "リスクを計算し、最適な意思決定を行うために様々な選択肢を検討する",
+      "category": "decision_making",
+      "weight": 1.2,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 1,
+        "akashic_traveler": 0,
+        "grand_strategist": 2
+      }
+    },
+    {
+      "id": "q19",
+      "text": "従来の方法にとらわれず、新しいアプローチを試すことに抵抗がない",
+      "category": "experimentation",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 2,
+        "void_analyst": 0,
+        "harmony_weaver": 0,
+        "matrix_builder": 0,
+        "akashic_traveler": 1,
+        "grand_strategist": 1
+      }
+    },
+    {
+      "id": "q20",
+      "text": "全体像を把握し、長期的な影響を考慮して行動することが重要だと思う",
+      "category": "holistic_thinking",
+      "weight": 1.1,
+      "characterTypeMapping": {
+        "future_visionary": 1,
+        "void_analyst": 1,
+        "harmony_weaver": 0,
+        "matrix_builder": 0,
+        "akashic_traveler": 1,
+        "grand_strategist": 2
+      }
+    }
+  ],
+  "calculationLogic": {
+    "answerMapping": {
+      "1": -2,
+      "2": -1,
+      "3": 0,
+      "4": 1,
+      "5": 2
+    },
+    "enhancedCalculation": true,
+    "reliabilityAssessment": true,
+    "percentageMethod": "relative_with_confidence"
+  }
+} 
