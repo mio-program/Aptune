@@ -16,10 +16,12 @@ export default function Stage2Page() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/auth?redirect=/assessment/stage2&message=詳細診断には会員登録が必要です');
-      return;
-    }
+    // 認証チェックを一時的に無効化
+    // if (!user) {
+    //   router.push('/auth?redirect=/assessment/stage2&message=詳細診断には会員登録が必要です');
+    //   return;
+    // }
+    
     // Stage1結果をローカルストレージから取得
     const saved = localStorage.getItem('stage1_result');
     if (saved) {

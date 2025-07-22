@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { assessmentQuestions } from '../../data/assessment-questions';
 import LikertScale from '../../components/ui/LikertScale';
+import ParticleEffect from '../../components/ParticleEffect';
 import { calculateScores } from '../../lib/innerlog-engine';
 
 const QUESTIONS_PER_PAGE = 6;
@@ -50,11 +51,21 @@ export default function AssessmentPage() {
   const handleSubmit = () => {
     setIsSubmitting(true);
     const result = calculateScores(answers);
-    localStorage.setItem('innerlog_diagnostic_result', JSON.stringify({
+    
+    // デバッグログ追加
+    console.log('Assessment answers:', answers);
+    console.log('Calculated result:', result);
+    console.log('Primary type:', result.primaryType);
+    
+    const resultData = {
       answers,
       result,
       timestamp: new Date().toISOString(),
-    }));
+    };
+    
+    localStorage.setItem('innerlog_diagnostic_result', JSON.stringify(resultData));
+    console.log('Stored result data:', resultData);
+    
     router.push('/assessment/results');
   };
 
@@ -63,65 +74,107 @@ export default function AssessmentPage() {
   const progress = Math.round((answeredCount / totalQuestions) * 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-black">
+      <ParticleEffect />
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* ヘッダー */}
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">InnerLogキャリア診断</h1>
-          <p className="text-gray-600">全{totalQuestions}問・6タイプ診断（1ページ6問）</p>
+        <div className="mb-10 text-center">
+          <h1 className="text-6xl font-black cyber-title mb-6 typing-effect" style={{ fontFamily: 'Orbitron, monospace' }}>🔥 InnerLog AI診断</h1>
+          <p className="text-gray-200 text-xl cyber-text-gold">AI時代の最強キャリア分析 - 全{totalQuestions}問・6タイプ診断</p>
         </div>
+        
         {/* プログレスバー */}
-        <div className="mb-8">
-          <div className="flex justify-between text-sm text-gray-700 mb-1">
-            <span>進捗: {answeredCount} / {totalQuestions}問</span>
-            <span>{progress}% 完了</span>
+        <div className="mb-10">
+          <div className="flex justify-between text-lg font-semibold text-gray-200 mb-3">
+            <span className="cyber-text-gold" style={{ fontFamily: 'Orbitron, monospace' }}>進捗: {answeredCount} / {totalQuestions}問</span>
+            <span className="cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>{progress}% 完了</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+          <div className="w-full bg-gray-800 rounded-full h-4 border border-gray-600 glass-morph">
+            <div 
+              className="cyber-gradient h-4 rounded-full transition-all duration-700 cyber-glow" 
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
         </div>
+        
         {/* 質問リスト */}
-        <div className="space-y-8 mb-8">
+        <div className="space-y-12 mb-12">
           {pageQuestions.map((q, idx) => (
-            <div key={q.id} className="bg-white rounded-lg shadow p-6">
-              <div className="mb-4 flex items-center gap-2">
-                <span className="text-lg font-bold text-blue-600">Q{currentPage * QUESTIONS_PER_PAGE + idx + 1}</span>
-                <span className="text-base font-medium text-gray-900">{q.question}</span>
+            <div key={q.id} className="cyber-card rounded-xl p-10 relative overflow-hidden energy-wave-trigger">
+              <div className="energy-wave"></div>
+              <div className="mb-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-3xl font-black cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>
+                    Q{currentPage * QUESTIONS_PER_PAGE + idx + 1}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-medium text-gray-100 leading-relaxed">
+                  {q.question}
+                </h3>
               </div>
+              
               <LikertScale
                 questionId={q.id}
                 currentAnswer={answers[q.id] || null}
                 onAnswerChange={handleAnswerChange}
                 isDisabled={isSubmitting}
               />
-              <div className="mt-2 text-xs text-gray-400">{q.category} / {q.measurement}</div>
             </div>
           ))}
         </div>
         {/* ナビゲーション */}
-        <div className="flex justify-between items-center gap-4 mt-8">
+        <div className="flex justify-between items-center gap-6 mt-12">
           <button
             onClick={handlePrev}
             disabled={currentPage === 0 || isSubmitting}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${currentPage === 0 || isSubmitting ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 ${
+              currentPage === 0 || isSubmitting 
+                ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700' 
+                : 'cyber-card text-gray-300 hover:cyber-text-glow hover:scale-105'
+            }`}
           >
-            前へ
+            ← 前へ
           </button>
+          
+          <div className="text-center">
+            <div className="text-gray-300 text-lg mb-2 font-semibold" style={{ fontFamily: 'Orbitron, monospace' }}>
+              ページ {currentPage + 1} / {totalPages}
+            </div>
+            <div className="flex gap-3">
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-4 h-4 rounded-full transition-all duration-500 ${
+                    i === currentPage ? 'cyber-gradient cyber-glow' : 'bg-gray-600 border border-gray-500'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          
           {currentPage < totalPages - 1 ? (
             <button
               onClick={handleNext}
               disabled={!isPageAnswered || isSubmitting}
-              className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${!isPageAnswered || isSubmitting ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              className={`px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 ${
+                !isPageAnswered || isSubmitting 
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700' 
+                  : 'cyber-button hover:scale-105 cyber-glow'
+              }`}
             >
-              次へ
+              次へ →
             </button>
           ) : (
             <button
               onClick={handleSubmit}
               disabled={!isAllAnswered || isSubmitting}
-              className={`px-8 py-3 rounded-lg font-medium transition-all duration-200 ${!isAllAnswered || isSubmitting ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+              className={`px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 ${
+                !isAllAnswered || isSubmitting 
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700' 
+                  : 'cyber-button-gold hover:scale-105 cyber-glow cyber-pulse'
+              }`}
             >
-              {isSubmitting ? '診断中...' : '診断結果を見る'}
+              {isSubmitting ? '🔄 AI分析中...' : '🚀 診断結果を見る'}
             </button>
           )}
         </div>

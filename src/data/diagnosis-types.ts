@@ -16,6 +16,7 @@ export interface DiagnosisTypePremiumContent {
 export interface DiagnosisType {
   id: string;
   name: string;
+  englishName: string;
   subtitle: string;
   free_content: DiagnosisTypeContent;
   premium_content: DiagnosisTypePremiumContent;
@@ -25,6 +26,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   FV: {
     id: 'FV',
     name: 'フューチャー・ビジョナリー',
+    englishName: 'FUTURE VISIONARY',
     subtitle: 'AI駆動型イノベーター',
     free_content: {
       type_characteristics: '「未来を描く創造者」\n\nあなたは、まだ誰も見たことのない未来を夢想し、それを形にすることに情熱を燃やす、生まれながらのイノベーターです...',
@@ -43,6 +45,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   VA: {
     id: 'VA',
     name: 'ヴォイド・アナリスト',
+    englishName: 'VOID ANALYST',
     subtitle: 'データ駆動型探究者',
     free_content: {
       type_characteristics: '「虚空から真実を掴む探偵」\n\nあなたは複雑な事象から論理とデータで真実を見つけ出す分析の専門家です...',
@@ -61,6 +64,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   HC: {
     id: 'HC',
     name: 'ハーモニー・コーディネーター',
+    englishName: 'HARMONY COORDINATOR',
     subtitle: '共感型チームビルダー',
     free_content: {
       type_characteristics: '「心と心を紡ぐ調整者」\n\nあなたは人と人をつなぎ、チームの調和を生み出す共感力の達人です...',
@@ -79,6 +83,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   MB: {
     id: 'MB',
     name: 'マトリクス・ビルダー',
+    englishName: 'MATRIX BUILDER',
     subtitle: '実践型システム構築者',
     free_content: {
       type_characteristics: '「現実を支える建築家」\n\nあなたは抽象的なアイデアを具体的なシステムに落とし込む実践的構築者です...',
@@ -97,6 +102,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   AT: {
     id: 'AT',
     name: 'アカシック・トラベラー',
+    englishName: 'AKASHIC TRAVELER',
     subtitle: '知的好奇心型ラーナー',
     free_content: {
       type_characteristics: '「宇宙の記憶を旅する探求者」\n\nあなたは尽きない知的好奇心で広大な知識の海を旅する学習者です...',
@@ -115,6 +121,7 @@ export const diagnosisTypes: { [key: string]: DiagnosisType } = {
   GS: {
     id: 'GS',
     name: 'グランド・ストラテジスト',
+    englishName: 'GRAND STRATEGIST',
     subtitle: '戦略型ビジョナリー',
     free_content: {
       type_characteristics: '「成功を導く戦略家」\n\nあなたは盤面全体を俯瞰し勝利から逆算して最適手を見つける天性のストラテジストです...',
