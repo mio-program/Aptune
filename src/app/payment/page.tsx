@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'

@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -33,7 +36,7 @@ export default function AuthPage() {
           setError('確認メールを送信しました。メールを確認してログインしてください。')
         }
       }
-    } catch (err) {
+    } catch {
       setError('予期しないエラーが発生しました。')
     } finally {
       setLoading(false)

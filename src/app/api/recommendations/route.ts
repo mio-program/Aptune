@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !personalityType) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
     }
-    const supabase = createClient()
+    const supabase = await createServerSupabaseClient()
 
     // 学習コンテンツをタイプでフィルタ
     const { data: contents, error } = await supabase
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       priority_score: 1,
       created_at: new Date().toISOString(),
     })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 } 

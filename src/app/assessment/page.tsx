@@ -1,5 +1,9 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { assessmentQuestions } from '../../data/assessment-questions';
 import LikertScale from '../../components/ui/LikertScale';
@@ -48,25 +52,37 @@ export default function AssessmentPage() {
   };
 
   // 診断実行
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    const result = calculateScores(answers);
     
-    // デバッグログ追加
-    console.log('Assessment answers:', answers);
-    console.log('Calculated result:', result);
-    console.log('Primary type:', result.primaryType);
-    
-    const resultData = {
-      answers,
-      result,
-      timestamp: new Date().toISOString(),
-    };
-    
-    localStorage.setItem('innerlog_diagnostic_result', JSON.stringify(resultData));
-    console.log('Stored result data:', resultData);
-    
-    router.push('/assessment/results');
+    try {
+      const result = calculateScores(answers);
+      
+      // データ検証
+      if (!result || !result.primaryType) {
+        throw new Error('診断結果の計算に失敗しました');
+      }
+      
+      const resultData = {
+        answers,
+        result,
+        timestamp: new Date().toISOString(),
+      };
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('innerlog_diagnostic_result', JSON.stringify(resultData));
+      }
+      
+      // 少し待ってからリダイレクト（UX向上）
+      setTimeout(() => {
+        router.push('/assessment/results');
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Assessment submission error:', error);
+      setIsSubmitting(false);
+      alert('診断結果の処理中にエラーが発生しました。もう一度お試しください。');
+    }
   };
 
   // プログレス

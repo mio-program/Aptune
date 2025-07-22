@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase';
 import { characters, Character } from '@/data/characters';
 import Image from 'next/image';
 import Link from 'next/link';

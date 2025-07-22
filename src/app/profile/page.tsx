@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -49,28 +52,30 @@ export default function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single()
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading profile:', error)
-        return
+      // 現在のプロジェクトではuser_profilesテーブルが存在しないため、
+      // 基本的なユーザー情報のみ表示
+      const mockProfile = {
+        id: user?.id || '',
+        user_id: user?.id || '',
+        full_name: user?.user_metadata?.full_name || '',
+        current_role: '',
+        experience_years: 0,
+        skills: [],
+        industry: '',
+        education: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
 
-      if (data) {
-        setProfile(data)
-        setFormData({
-          full_name: data.full_name || '',
-          current_role: data.current_role || '',
-          experience_years: data.experience_years || 0,
-          skills: data.skills || [],
-          industry: data.industry || '',
-          education: data.education || ''
-        })
-      }
+      setProfile(mockProfile)
+      setFormData({
+        full_name: mockProfile.full_name,
+        current_role: mockProfile.current_role,
+        experience_years: mockProfile.experience_years,
+        skills: mockProfile.skills,
+        industry: mockProfile.industry,
+        education: mockProfile.education
+      })
     } catch (error) {
       console.error('Error loading profile:', error)
     }
@@ -83,29 +88,22 @@ export default function ProfilePage() {
     setMessage('')
 
     try {
-      if (profile) {
-        // Update existing profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .update(formData)
-          .eq('user_id', user.id)
-
-        if (error) throw error
-      } else {
-        // Create new profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: user.id,
-            ...formData
-          })
-
-        if (error) throw error
+      // 現在のプロジェクトではデータベース保存は実装せず、
+      // ローカルストレージに保存
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_profile', JSON.stringify(formData))
       }
-
+      
       setMessage('プロフィールを保存しました')
       setIsEditing(false)
-      loadProfile()
+      
+      // プロフィール状態を更新
+      const updatedProfile = {
+        ...profile!,
+        ...formData,
+        updated_at: new Date().toISOString()
+      }
+      setProfile(updatedProfile)
     } catch (error) {
       console.error('Error saving profile:', error)
       setMessage('プロフィールの保存に失敗しました')

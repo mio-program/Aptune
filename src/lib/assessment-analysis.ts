@@ -1,5 +1,5 @@
 import { assessmentQuestions } from '@/data/assessment-questions';
-import { diagnosisTypes } from '@/data/diagnosis-types';
+// import { diagnosisTypes } from '@/data/diagnosis-types';
 
 export interface AnalysisResult {
   primaryType: string;
@@ -23,4 +23,9 @@ export function analyzeAssessmentResults(responses: Record<string, number>): Ana
   const total = Object.values(scores).reduce((a, b) => a + Math.abs(b), 0);
   const confidence = total > 0 ? Math.abs(scores[primaryType]) / total : 0;
   return { primaryType, scores, confidence };
+}
+
+export function calculateDetailedTypeFromStage2(responses: Record<string, number>): AnalysisResult {
+  // Stage2の詳細分析（Stage1と同じロジックを使用）
+  return analyzeAssessmentResults(responses);
 } 

@@ -1,41 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { getUser } from '../../../lib/supabase-server'
+import { createClient } from '@/lib/supabase'
+import { stripe } from '@/lib/stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-08-16' })
-
-export async function POST(req: NextRequest) {
-  // 認証ユーザー取得
-  const user = await getUser(req)
-  if (!user) {
-    return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-  }
-  const { amount } = await req.json()
+export async function POST(request: NextRequest) {
   try {
+    const { amount, userId } = await request.json()
+
+    // 入力値検証
+    if (!amount || amount !== 500) {
+      return NextResponse.json(
+        { error: 'Invalid amount' },
+        { status: 400 }
+      )
+    }
+
+    // ユーザー認証チェック（オプション）
+    let user = null
+    if (userId) {
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      user = authUser
+    }
+
+    // Stripe Checkout Session作成
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'apple_pay', 'google_pay'],
+      payment_method_types: ['card'],
       mode: 'payment',
-      customer_email: user.email,
       line_items: [
         {
           price_data: {
-            currency: 'usd',
+            currency: 'jpy',
             product_data: {
-              name: 'InnerLog有料診断コンテンツ',
+              name: 'InnerLog AI診断 - プレミアム詳細分析',
+              description: 'AI時代のキャリア診断の詳細分析結果をアンロック',
             },
-            unit_amount: 500,
+            unit_amount: amount * 100, // 円をセント単位に変換
           },
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/diagnosis/premium-unlocked`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/diagnosis/result`,
+      success_url: `${request.nextUrl.origin}/diagnosis/premium-unlocked?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${request.nextUrl.origin}/assessment/results`,
       metadata: {
-        user_id: user.id,
+        userId: user?.id || 'anonymous',
+        amount: amount.toString(),
+        type: 'premium_diagnosis',
       },
     })
-    return NextResponse.json({ url: session.url })
-  } catch (e) {
-    return NextResponse.json({ error: 'Stripeセッション作成失敗' }, { status: 500 })
+
+    return NextResponse.json({ 
+      sessionId: session.id,
+      url: session.url 
+    })
+
+  } catch (error) {
+    console.error('Checkout session creation error:', error)
+    return NextResponse.json(
+      { error: 'Failed to create checkout session' },
+      { status: 500 }
+    )
   }
-} 
+}

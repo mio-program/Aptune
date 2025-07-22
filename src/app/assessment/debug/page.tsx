@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ParticleEffect from '../../../components/ParticleEffect'
@@ -10,6 +13,7 @@ export default function DebugPage() {
 
   useEffect(() => {
     // localStorage の全データをチェック
+    if (typeof window === 'undefined') return
     const stored = localStorage.getItem('innerlog_diagnostic_result')
     const data = {
       hasStoredData: !!stored,
@@ -21,7 +25,7 @@ export default function DebugPage() {
           return { error: e.message }
         }
       })() : null,
-      localStorageKeys: Object.keys(localStorage).filter(key => key.includes('innerlog'))
+      localStorageKeys: typeof window !== 'undefined' ? Object.keys(localStorage).filter(key => key.includes('innerlog')) : []
     }
     
     setDebugData(data)
@@ -29,8 +33,10 @@ export default function DebugPage() {
   }, [])
 
   const clearLocalStorage = () => {
-    localStorage.removeItem('innerlog_diagnostic_result')
-    setDebugData(prev => ({ ...prev, hasStoredData: false, rawData: null, parsedData: null }))
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('innerlog_diagnostic_result')
+      setDebugData(prev => ({ ...prev, hasStoredData: false, rawData: null, parsedData: null }))
+    }
   }
 
   const createTestData = () => {
@@ -44,7 +50,9 @@ export default function DebugPage() {
       timestamp: new Date().toISOString()
     }
     
-    localStorage.setItem('innerlog_diagnostic_result', JSON.stringify(testData))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('innerlog_diagnostic_result', JSON.stringify(testData))
+    }
     setDebugData(prev => ({ ...prev, hasStoredData: true, rawData: JSON.stringify(testData), parsedData: testData }))
   }
 

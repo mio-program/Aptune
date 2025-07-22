@@ -1,14 +1,18 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { diagnosisTypes } from '../../../data/diagnosis-types'
+// import { diagnosisTypes } from '../../../data/diagnosis-types'
 import DiagnosisResult from '../../../components/DiagnosisResult'
 import PaymentModal from '../../../components/PaymentModal'
 import ParticleEffect from '../../../components/ParticleEffect'
-import { createClient } from '../../../lib/supabase-client'
+import { createClient } from '../../../lib/supabase'
+import { generateDiagnosisPDF, downloadPDF } from '../../../lib/pdf-generator'
 
-// const careerTypes = questionsData.career_types
+// 診断タイプデータは DiagnosisResult コンポーネント内で処理
 
 export default function ResultsPage() {
   const router = useRouter()
@@ -18,41 +22,67 @@ export default function ResultsPage() {
   const [isPremiumUnlocked, setIsPremiumUnlocked] = useState(false)
   const [user, setUser] = useState<any>(null)
 
-  // 認証チェックを一時的に無効化（認証なしでも診断結果を表示）
+  // 認証チェック（オプション）
   useEffect(() => {
-    // 認証チェックをスキップ
-    // const supabase = createClient()
-    // supabase.auth.getUser().then(({ data }) => {
-    //   if (!data?.user) {
-    //     router.push('/auth')
-    //   } else {
-    //     setUser(data.user)
-    //   }
-    // })
+    try {
+      const supabase = createClient()
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user) {
+          setUser(data.user)
+        }
+        // 認証なしでも診断結果は表示可能
+      }).catch(error => {
+        console.error('Auth check error:', error)
+        // エラーが発生しても診断結果は表示
+      })
+    } catch (error) {
+      console.error('Supabase client error:', error)
+      // クライアント初期化エラーでも診断結果は表示
+    }
   }, [router])
 
   // 診断データ取得
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const stored = localStorage.getItem('innerlog_diagnostic_result')
-    console.log('Stored data from localStorage:', stored);
     
     if (!stored) {
       console.log('No stored data found, redirecting to assessment');
       setTimeout(() => {
         setIsLoading(false)
         router.push('/assessment')
-      }, 2000) // 2秒後にリダイレクト
+      }, 1500)
       return
     }
     
     try {
       const parsedData = JSON.parse(stored);
-      console.log('Parsed result data:', parsedData);
       
-      // データ構造の検証
-      if (!parsedData.result || !parsedData.result.primaryType) {
+      // データ構造の詳細検証
+      if (!parsedData || 
+          !parsedData.result || 
+          !parsedData.result.primaryType || 
+          !parsedData.result.scores ||
+          !parsedData.answers) {
         console.error('Invalid data structure:', parsedData);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('innerlog_diagnostic_result'); // 無効なデータを削除
+        }
         throw new Error('Invalid result data structure')
+      }
+      
+      // スコアデータの検証
+      const requiredTypes = ['FV', 'AT', 'VA', 'HC', 'MB', 'GS'];
+      const hasValidScores = requiredTypes.every(type => 
+        typeof parsedData.result.scores[type] === 'number'
+      );
+      
+      if (!hasValidScores) {
+        console.error('Invalid scores data:', parsedData.result.scores);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('innerlog_diagnostic_result');
+        }
+        throw new Error('Invalid scores data')
       }
       
       setResultData(parsedData)
@@ -61,28 +91,56 @@ export default function ResultsPage() {
       setTimeout(() => {
         setIsLoading(false)
         router.push('/assessment')
-      }, 2000)
+      }, 1500)
       return
     }
     
     setIsLoading(false)
   }, [router])
 
-  // premium_unlocksテーブルでアンロック判定（認証なしでは無料版として扱う）
+  // プレミアムアンロック状態の確認
   useEffect(() => {
-    // 認証なしの場合は無料版として扱う
-    setIsPremiumUnlocked(false)
+    // まずローカルストレージをチェック（認証なしでも動作）
+    if (typeof window === 'undefined') return
+    const localPremium = localStorage.getItem('premium_unlocked')
+    if (localPremium === 'true') {
+      setIsPremiumUnlocked(true)
+      return
+    }
+
+    // ユーザーがログインしている場合はデータベースもチェック
+    if (!user) {
+      setIsPremiumUnlocked(false)
+      return
+    }
     
-    // 以下は認証が必要な場合のコード（コメントアウト）
-    // if (!user) return
-    // const supabase = createClient()
-    // supabase
-    //   .from('premium_unlocks')
-    //   .select('id')
-    //   .eq('user_id', user.id)
-    //   .then(({ data }) => {
-    //     setIsPremiumUnlocked(!!(data && data.length > 0))
-    //   })
+    try {
+      const supabase = createClient()
+      supabase
+        .from('premium_unlocks')
+        .select('id')
+        .eq('user_id', user.id)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Premium unlock check error:', error)
+            setIsPremiumUnlocked(false)
+          } else {
+            const hasUnlock = !!(data && data.length > 0)
+            setIsPremiumUnlocked(hasUnlock)
+            // データベースにある場合はローカルストレージにも保存
+            if (hasUnlock && typeof window !== 'undefined') {
+              localStorage.setItem('premium_unlocked', 'true')
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Premium unlock query error:', error)
+          setIsPremiumUnlocked(false)
+        })
+    } catch (error) {
+      console.error('Supabase client error in premium check:', error)
+      setIsPremiumUnlocked(false)
+    }
   }, [user])
 
   // Stripe決済成功時のunlock処理
@@ -90,6 +148,29 @@ export default function ResultsPage() {
     setShowPayment(true)
   }
   const handlePaymentClose = () => setShowPayment(false)
+
+  // PDF出力処理
+  const handleDownloadPDF = () => {
+    if (!isPremiumUnlocked) {
+      alert('PDFダウンロードはプレミアムユーザー限定機能です。')
+      return
+    }
+
+    try {
+      const pdf = generateDiagnosisPDF({
+        userType: primaryType,
+        timestamp: resultData.timestamp,
+        answers: resultData.answers,
+        scores: resultData.result.scores,
+      })
+      
+      const filename = `innerlog-diagnosis-${primaryType}-${new Date().toISOString().split('T')[0]}.pdf`
+      downloadPDF(pdf, filename)
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      alert('PDFの生成中にエラーが発生しました。')
+    }
+  }
 
   if (isLoading || !resultData) {
     return (
@@ -104,7 +185,7 @@ export default function ResultsPage() {
             診断結果を読み込んでいます...
           </p>
           <div className="mt-6 text-sm text-gray-400">
-            {!localStorage.getItem('innerlog_diagnostic_result') && (
+            {typeof window !== 'undefined' && !localStorage.getItem('innerlog_diagnostic_result') && (
               <div>
                 <p className="mb-4">診断データが見つかりません</p>
                 <button
@@ -164,7 +245,17 @@ export default function ResultsPage() {
         />
         
         {/* アクションボタン */}
-        <div className="flex flex-col sm:flex-row gap-8 justify-center mt-16">
+        <div className="flex flex-col sm:flex-row gap-6 justify-center mt-16">
+          {isPremiumUnlocked && (
+            <button
+              onClick={handleDownloadPDF}
+              className="cyber-button-gold px-10 py-5 rounded-xl font-bold text-xl hover:scale-105 transition-all duration-400 energy-wave-trigger relative overflow-hidden"
+              style={{ fontFamily: 'Orbitron, monospace' }}
+            >
+              <div className="energy-wave"></div>
+              📄 PDFレポートダウンロード
+            </button>
+          )}
           <button
             onClick={() => router.push('/assessment')}
             className="cyber-button px-10 py-5 rounded-xl font-bold text-xl hover:scale-105 transition-all duration-400 energy-wave-trigger relative overflow-hidden"

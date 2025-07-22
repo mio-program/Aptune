@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -46,31 +49,32 @@ export default function PaymentHistoryPage() {
 
   const loadPaymentHistory = async () => {
     try {
-      // 支払い履歴を取得
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('payments')
+      // premium_unlocksテーブルから決済履歴を取得
+      const { data: premiumData, error: premiumError } = await supabase
+        .from('premium_unlocks')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
 
-      if (paymentsError) {
-        console.error('Error loading payments:', paymentsError)
+      if (premiumError) {
+        console.error('Error loading premium unlocks:', premiumError)
       } else {
-        setPayments(paymentsData || [])
+        // premium_unlocksデータをPayment形式に変換
+        const convertedPayments: Payment[] = (premiumData || []).map(unlock => ({
+          id: unlock.id,
+          amount: unlock.amount * 100, // 円をセント単位に変換
+          currency: 'jpy',
+          status: unlock.payment_status === 'completed' ? 'succeeded' : unlock.payment_status,
+          payment_type: 'premium_diagnosis',
+          created_at: unlock.created_at,
+          stripe_payment_intent_id: unlock.session_id
+        }))
+        
+        setPayments(convertedPayments)
       }
 
-      // サブスクリプション履歴を取得
-      const { data: subscriptionsData, error: subscriptionsError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-
-      if (subscriptionsError) {
-        console.error('Error loading subscriptions:', subscriptionsError)
-      } else {
-        setSubscriptions(subscriptionsData || [])
-      }
+      // 現在のプロジェクトではサブスクリプション機能は未実装
+      setSubscriptions([])
     } catch (error) {
       console.error('Error loading payment history:', error)
     } finally {
@@ -112,6 +116,8 @@ export default function PaymentHistoryPage() {
 
   const getPaymentTypeLabel = (type: string) => {
     switch (type) {
+      case 'premium_diagnosis':
+        return 'プレミアム診断アンロック'
       case 'premium_assessment':
         return 'プレミアム診断'
       case 'monthly_subscription':

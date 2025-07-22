@@ -104,7 +104,7 @@ export function CTA() {
                       </div>
                     </div>
                     <blockquote className="text-gray-700 mb-4">
-                      "{testimonial.content}"
+                      &ldquo;{testimonial.content}&rdquo;
                     </blockquote>
                     <div>
                       <div className="font-medium text-gray-900">{testimonial.author}</div>

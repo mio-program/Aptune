@@ -11,11 +11,34 @@ interface PaymentModalProps {
 export default function PaymentModal({ open, onClose, amount }: PaymentModalProps) {
   if (!open) return null
 
-  const handlePayment = () => {
-    // Stripe決済の実装予定
-    console.log('Processing payment for amount:', amount)
-    alert(`¥${amount * 100}の決済を処理しています...`)
-    onClose()
+  const handlePayment = async () => {
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: amount * 100, // ¥500 -> 500
+          userId: null, // 認証なしでも決済可能
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        alert('決済の準備中にエラーが発生しました: ' + data.error)
+        return
+      }
+
+      // Stripe Checkoutページにリダイレクト
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error('Payment error:', error)
+      alert('決済処理中にエラーが発生しました。もう一度お試しください。')
+    }
   }
 
   return (

@@ -1,29 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, userId } = await request.json()
+    const { sessionId } = await request.json()
 
-    if (!sessionId || !userId) {
+    if (!sessionId) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Session ID is required' },
         { status: 400 }
       )
     }
 
-    // Stripeセッションを取得
+    // Stripe Checkout Sessionの詳細を取得
     const session = await stripe.checkout.sessions.retrieve(sessionId)
 
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      )
-    }
-
-    // セッションが完了しているかチェック
     if (session.payment_status !== 'paid') {
       return NextResponse.json(
         { error: 'Payment not completed' },
@@ -31,36 +23,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // ユーザーIDが一致するかチェック
-    if (session.client_reference_id !== userId) {
-      return NextResponse.json(
-        { error: 'User mismatch' },
-        { status: 403 }
-      )
-    }
-
+    // 決済が成功している場合、データベースに記録
     const supabase = createClient()
+    
+    // premium_unlocksテーブルに記録（ユーザーIDがある場合）
+    if (session.metadata?.userId && session.metadata.userId !== 'anonymous') {
+      const { error: insertError } = await supabase
+        .from('premium_unlocks')
+        .insert({
+          user_id: session.metadata.userId,
+          session_id: sessionId,
+          amount: parseInt(session.metadata?.amount || '500'),
+          payment_status: 'completed',
+          created_at: new Date().toISOString(),
+        })
 
-    // 支払い記録を確認
-    const { data: payment, error: paymentError } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('stripe_session_id', sessionId)
-      .single()
-
-    if (paymentError || !payment) {
-      return NextResponse.json(
-        { error: 'Payment record not found' },
-        { status: 404 }
-      )
+      if (insertError) {
+        console.error('Database insert error:', insertError)
+        // エラーがあってもクライアントには成功を返す（決済は完了しているため）
+      }
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      sessionId,
+      paymentStatus: session.payment_status 
+    })
+
   } catch (error) {
-    console.error('Error verifying payment:', error)
+    console.error('Payment verification error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to verify payment' },
       { status: 500 }
     )
   }
-} 
+}

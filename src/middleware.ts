@@ -2,11 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 一時的にmiddlewareを無効化
-  return NextResponse.next()
-  
-  // 以下は元のコード（コメントアウト）
-  /*
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -37,7 +32,6 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getUser()
 
   return supabaseResponse
-  */
 }
 
 export const config = {

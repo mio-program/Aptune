@@ -1,5 +1,8 @@
 'use client';
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { stage2Questions } from '@/data/assessment-questions';
@@ -23,6 +26,7 @@ export default function Stage2Page() {
     // }
     
     // Stage1結果をローカルストレージから取得
+    if (typeof window === 'undefined') return
     const saved = localStorage.getItem('stage1_result');
     if (saved) {
       setStage1Result(JSON.parse(saved));

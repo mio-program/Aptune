@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ParticleEffect from '../../../components/ParticleEffect'
@@ -114,6 +117,7 @@ export default function LearningDashboardPage() {
 
   useEffect(() => {
     // セットアップデータを取得
+    if (typeof window === 'undefined') return
     const storedSetup = localStorage.getItem('innerlog_learning_setup')
     if (!storedSetup) {
       router.push('/learning/setup')

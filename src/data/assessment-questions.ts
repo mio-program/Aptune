@@ -60,4 +60,7 @@ export const assessmentQuestions: Question[] = [
   { id: "Q44", question: "AI-人間協働で重要なのは効率分業より、創造性刺激による新発想", category: "AI協働・未来適応", measurement: "創造協働志向", weights: { FV: 3, AT: 2, VA: 0, HC: 2, MB: 0, GS: 0 } },
   { id: "Q45", question: "AI倫理問題への関心度・重要性認識が非常に高い", category: "AI協働・未来適応", measurement: "AI倫理意識", weights: { FV: 1, AT: 2, VA: 2, HC: 3, MB: 1, GS: 1 } },
   { id: "Q46", question: "複雑情報の整理・要点明確化作業に深い満足感を得る", category: "AI協働・未来適応", measurement: "情報整理志向", weights: { FV: 0, AT: 2, VA: 3, HC: 0, MB: 2, GS: 1 } }
-]; 
+];
+
+// Stage2用の質問（詳細診断用）
+export const stage2Questions: Question[] = assessmentQuestions.slice(20, 46); 

@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ParticleEffect from '../../../components/ParticleEffect'
@@ -94,6 +97,7 @@ export default function LearningSetupPage() {
 
   // 診断結果からユーザータイプを取得
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const stored = localStorage.getItem('innerlog_diagnostic_result')
     if (stored) {
       try {
@@ -140,11 +144,13 @@ export default function LearningSetupPage() {
 
   const handleComplete = () => {
     // セットアップデータを保存
-    localStorage.setItem('innerlog_learning_setup', JSON.stringify({
-      userType,
-      ...setupData,
-      completedAt: new Date().toISOString()
-    }))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('innerlog_learning_setup', JSON.stringify({
+        userType,
+        ...setupData,
+        completedAt: new Date().toISOString()
+      }))
+    }
     
     // 学習ダッシュボードにリダイレクト
     router.push('/learning/dashboard')

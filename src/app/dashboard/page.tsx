@@ -1,5 +1,8 @@
 'use client'
 
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -58,20 +61,31 @@ export default function DashboardPage() {
 
   const loadUserData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('subscription_status, premium_assessment_purchased, subscription_end_date, personality_type')
-        .eq('id', user?.id)
-        .single()
+      // プレミアムアンロック状態をチェック
+      const { data: premiumData, error: premiumError } = await supabase
+        .from('premium_unlocks')
+        .select('id')
+        .eq('user_id', user?.id)
 
-      if (error) {
-        console.error('Error loading user data:', error)
-        return
-      }
+      const hasPremiumUnlock = !premiumError && premiumData && premiumData.length > 0
 
-      setUserData(data)
+      // ローカルストレージもチェック
+      const localPremium = typeof window !== 'undefined' ? localStorage.getItem('premium_unlocked') === 'true' : false
+
+      setUserData({
+        subscription_status: 'free',
+        premium_assessment_purchased: hasPremiumUnlock || localPremium,
+        subscription_end_date: null,
+        personality_type: 'unknown'
+      })
     } catch (error) {
       console.error('Error loading user data:', error)
+      setUserData({
+        subscription_status: 'free',
+        premium_assessment_purchased: false,
+        subscription_end_date: null,
+        personality_type: 'unknown'
+      })
     } finally {
       setLoadingUserData(false)
     }
@@ -80,21 +94,37 @@ export default function DashboardPage() {
   const fetchRecommendations = async () => {
     setLoadingRecommendations(true)
     try {
+      // 診断結果から性格タイプを取得
+      const storedResult = typeof window !== 'undefined' ? localStorage.getItem('innerlog_diagnostic_result') : null
+      let personalityType = 'FV' // デフォルト
+      
+      if (storedResult) {
+        const parsedResult = JSON.parse(storedResult)
+        personalityType = parsedResult.result?.primaryType || 'FV'
+      }
+
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          personalityType: userData?.personality_type || 'future_innovator', // 仮
-          isPremium: userData?.subscription_status === 'active',
+          personalityType,
+          isPremium: userData?.premium_assessment_purchased || false,
         }),
       })
-      const data = await res.json()
-      setRecommendations(data.recommended_contents || [])
-      setRecommendationReason(data.recommendation_reason || '')
+      
+      if (res.ok) {
+        const data = await res.json()
+        setRecommendations(data.recommended_contents || [])
+        setRecommendationReason(data.recommendation_reason || '')
+      } else {
+        setRecommendations([])
+        setRecommendationReason('おすすめコンテンツの取得に失敗しました')
+      }
     } catch (e) {
+      console.error('Recommendations fetch error:', e)
       setRecommendations([])
-      setRecommendationReason('')
+      setRecommendationReason('おすすめコンテンツの取得中にエラーが発生しました')
     } finally {
       setLoadingRecommendations(false)
     }

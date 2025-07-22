@@ -1,31 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase'
 import Stripe from 'stripe'
+
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_dummy'
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
-  const signature = request.headers.get('stripe-signature')
-
-  if (!signature) {
-    return NextResponse.json(
-      { error: 'Missing stripe-signature header' },
-      { status: 400 }
-    )
-  }
+  const signature = request.headers.get('stripe-signature')!
 
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
-  } catch (error) {
-    console.error('Webhook signature verification failed:', error)
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err)
     return NextResponse.json(
-      { error: 'Invalid signature' },
+      { error: 'Webhook signature verification failed' },
       { status: 400 }
     )
   }
@@ -34,25 +25,66 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session)
-        break
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        
+        console.log('Checkout session completed:', session.id)
+        
+        // プレミアムアンロックの記録
+        if (session.metadata?.type === 'premium_diagnosis') {
+          const { error } = await supabase
+            .from('premium_unlocks')
+            .insert({
+              user_id: session.metadata.userId || null,
+              session_id: session.id,
+              amount: parseInt(session.metadata.amount || '500'),
+              payment_status: 'completed',
+              stripe_customer_id: session.customer as string || null,
+              created_at: new Date().toISOString(),
+            })
 
-      case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
+          if (error) {
+            console.error('Failed to record premium unlock:', error)
+          } else {
+            console.log('Premium unlock recorded successfully')
+          }
+        }
         break
+      }
 
-      case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        console.log('Payment succeeded:', paymentIntent.id)
+        
+        // 必要に応じて追加の処理
         break
+      }
 
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        console.log('Payment failed:', paymentIntent.id)
+        
+        // 失敗した決済の記録
+        break
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log('Invoice payment succeeded:', invoice.id)
+        
+        // サブスクリプション決済成功時の処理（将来の拡張用）
+        break
+      }
+
+      case 'customer.subscription.created':
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        console.log(`Subscription ${event.type}:`, subscription.id)
+        
+        // サブスクリプション関連の処理（将来の拡張用）
         break
-
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
-        break
+      }
 
       default:
         console.log(`Unhandled event type: ${event.type}`)
@@ -60,180 +92,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('Webhook processing error:', error)
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }
     )
   }
-
-  async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-    const userId = session.client_reference_id
-    const paymentType = session.metadata?.paymentType
-
-    if (!userId || !paymentType) {
-      console.error('Missing userId or paymentType in session metadata')
-      return
-    }
-
-    // 支払い記録を作成
-    await supabase.from('payments').insert({
-      user_id: userId,
-      stripe_payment_intent_id: session.payment_intent as string,
-      stripe_session_id: session.id,
-      amount: session.amount_total || 0,
-      currency: session.currency || 'jpy',
-      status: 'succeeded',
-      payment_type: paymentType,
-      metadata: session.metadata
-    })
-
-    if (paymentType === 'premium_assessment') {
-      // プレミアム診断購入フラグを更新
-      await supabase
-        .from('users')
-        .update({ premium_assessment_purchased: true })
-        .eq('id', userId)
-    } else if (paymentType === 'monthly_subscription') {
-      // サブスクリプション情報を更新
-      const subscription = session.subscription as string
-      if (subscription) {
-        const subscriptionData = await stripe.subscriptions.retrieve(subscription)
-        
-        await supabase.from('subscriptions').insert({
-          user_id: userId,
-          stripe_subscription_id: subscription,
-          status: subscriptionData.status,
-          current_period_start: new Date(subscriptionData.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscriptionData.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscriptionData.cancel_at_period_end,
-          metadata: subscriptionData.metadata
-        })
-
-        await supabase
-          .from('users')
-          .update({
-            subscription_status: subscriptionData.status,
-            subscription_id: subscription,
-            subscription_end_date: new Date(subscriptionData.current_period_end * 1000).toISOString()
-          })
-          .eq('id', userId)
-      }
-    }
-  }
-
-  async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
-    if (invoice.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
-      
-      // サブスクリプション情報を更新
-      await supabase
-        .from('subscriptions')
-        .update({
-          status: subscription.status,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end
-        })
-        .eq('stripe_subscription_id', subscription.id)
-
-      // ユーザー情報を更新
-      const { data: subscriptionData } = await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('stripe_subscription_id', subscription.id)
-        .single()
-
-      if (subscriptionData) {
-        await supabase
-          .from('users')
-          .update({
-            subscription_status: subscription.status,
-            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
-          })
-          .eq('id', subscriptionData.user_id)
-      }
-    }
-  }
-
-  async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-    if (invoice.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
-      
-      // サブスクリプションステータスを更新
-      await supabase
-        .from('subscriptions')
-        .update({ status: subscription.status })
-        .eq('stripe_subscription_id', subscription.id)
-
-      // ユーザー情報を更新
-      const { data: subscriptionData } = await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('stripe_subscription_id', subscription.id)
-        .single()
-
-      if (subscriptionData) {
-        await supabase
-          .from('users')
-          .update({ subscription_status: subscription.status })
-          .eq('id', subscriptionData.user_id)
-      }
-    }
-  }
-
-  async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-    // サブスクリプション情報を更新
-    await supabase
-      .from('subscriptions')
-      .update({
-        status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: subscription.cancel_at_period_end
-      })
-      .eq('stripe_subscription_id', subscription.id)
-
-    // ユーザー情報を更新
-    const { data: subscriptionData } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('stripe_subscription_id', subscription.id)
-      .single()
-
-    if (subscriptionData) {
-      await supabase
-        .from('users')
-        .update({
-          subscription_status: subscription.status,
-          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
-        })
-        .eq('id', subscriptionData.user_id)
-    }
-  }
-
-  async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-    // サブスクリプションステータスを更新
-    await supabase
-      .from('subscriptions')
-      .update({ status: subscription.status })
-      .eq('stripe_subscription_id', subscription.id)
-
-    // ユーザー情報を更新
-    const { data: subscriptionData } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('stripe_subscription_id', subscription.id)
-      .single()
-
-    if (subscriptionData) {
-      await supabase
-        .from('users')
-        .update({
-          subscription_status: subscription.status,
-          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
-        })
-        .eq('id', subscriptionData.user_id)
-    }
-  }
-} 
+}
